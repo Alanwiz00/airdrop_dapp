@@ -1,10 +1,10 @@
-import HelloWorld from './HelloWorld'
+import AirdropDapp from './AirdropDapp'
 import './App.css';
 
 function App() {
   return (
     <div className="App">
-    <HelloWorld></HelloWorld>
+    <AirdropDapp></AirdropDapp>
     </div>
   );
 }
