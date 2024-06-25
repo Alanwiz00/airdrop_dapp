@@ -3,7 +3,8 @@ const alchemyKey = "wss://eth-sepolia.g.alchemy.com/v2/snMDVX1MDtnuGO85MQX65rPXl
 const { createAlchemyWeb3 } = require("@alch/alchemy-web3");
 const web3 = createAlchemyWeb3(alchemyKey); 
 const contractABI = require("../contract-abi.json");
-const contractAddress = "0x5713E50930B99Fe13c6E2c3a6E15B311b0dB912C"
+const contractAddress = "0x5713E50930B99Fe13c6E2c3a6E15B311b0dB912C";
+const addressList = require("./proof/proofs.json");
 
 export const airdropDappContract = new web3.eth.Contract(
   contractABI,
@@ -89,6 +90,17 @@ export const getCurrentWalletConnected = async () => {
           ),
         };
     }
+};
+
+export const fetchEligibleAddresses = async () => {
+  try {
+    const response = await fetch(addressList);
+    const data = await response.json();
+    return data;
+  } catch (error){
+    console.error('Error fetching eligible addresses:', error);
+    return [];
+  }
 };
 
 export const claimAirdrop = async (address) => {
