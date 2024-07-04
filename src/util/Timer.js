@@ -29,9 +29,7 @@ const Timer = ({ claimPeriodStart, claimPeriodEnd }) => {
   };
 
   return (
-    <div>
-      <h1>{formatTime(timeLeft)}</h1>
-    </div>
+    formatTime(timeLeft)
   );
 };
 

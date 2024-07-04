@@ -1,17 +1,17 @@
-import React, { useReducer } from "react";
 import { useEffect, useState } from "react";
 import Timer from "./util/Timer";
 
 import {
   airdropDappContract,
   connectWallet,
+  disconnectWallet,
   claimAirdrop,
   getCurrentWalletConnected,
   fetchEligibleAddresses,
+  switchNetwork,
 } from "./util/interact.js";
 
 const AirdropDapp = () => {
-  //set variables
   const [walletAddress, setWallet] = useState("");
   const [status, setStatus] = useState("");
   const [message, setMessage] = useState("No connection to the network."); //default message
@@ -19,24 +19,27 @@ const AirdropDapp = () => {
   const [amountToClaim, setAmountToClaim] = useState(0);
   const [isEligible, setIsEligible] = useState(false);
   const [eligibleAddresses, setEligibleAddresses] = useState([]);
-  const claimPeriodEnd = 1720390808;
-  const claimPeriodStart= 1718323440;
+  const [step, setStep] = useState(1);
+  const claimPeriodEnd = 1722395225;
+  const claimPeriodStart= 1719893366;
   
   //called only once
-  useEffect(async () => {
-    async function fetchMessage() {
-      const message = await claimAirdrop();
-      setMessage(message);
-    }
-    fetchMessage();   
-    addSmartContractListener();
-
-    async function fetchWallet() {
-      const {address, status} = await getCurrentWalletConnected();
+  useEffect(() => {
+    async function fetchInitialData() {
+      const { address, status } = await getCurrentWalletConnected();
       setWallet(address);
       setStatus(status);
+
+      const addresses = await fetchEligibleAddresses();
+      setEligibleAddresses(addresses);
+
+      if (address) {
+        await switchNetwork();
+      }
     }
-    fetchWallet();
+
+    fetchInitialData();
+    addSmartContractListener();
     addWalletListener();
   }, []);
 
@@ -46,9 +49,9 @@ const AirdropDapp = () => {
   }, [claimPeriodStart, claimPeriodEnd]);
 
   useEffect(() => {
-    if (walletAddress) {
+    if (walletAddress && eligibleAddresses.length > 0) {
       const user = eligibleAddresses.find(
-        (user) => user.address === walletAddress.toLowerCase()
+        (user) => user.address && walletAddress && user.address.toLowerCase() === walletAddress.toLowerCase()
       );
       if (user) {
         setIsEligible(true);
@@ -60,36 +63,12 @@ const AirdropDapp = () => {
     }
   }, [walletAddress, eligibleAddresses]);
 
-  useEffect(() => {
-    const getEligibleAddresses = async () => {
-      const addresses = await fetchEligibleAddresses();
-      console.log("Fetched Eligible Address:", addresses)
-      setEligibleAddresses(addresses);
-    };
-
-    getEligibleAddresses();
-  }, []);
-
-  useEffect(() => {
-    if (walletAddress) {
-      const user = eligibleAddresses.find(
-        (user) => user.address === walletAddress.toLowerCase()
-      );
-      if (user) {
-        setIsEligible(true);
-        setAmountToClaim(user.amount);
+  function addSmartContractListener() { 
+    airdropDappContract.events.TokensClaimed({}, (error, data) => {
+      if (error) {
+        setStatus("😥 " + error.message);
       } else {
-        setIsEligible(false);
-        setAmountToClaim(0);
-      }
-    }
-  }, [walletAddress, eligibleAddresses]);
-
-  function addSmartContractListener() { airdropDappContract.events.TokensClaimed({}, (error, data) => {
-    if (error) {
-      setStatus("😥 " + error.message);
-    } else {
-      setStatus("🎉 Token Claimed");
+        setStatus("🎉 Token Claimed");
       }
     });
   }
@@ -121,7 +100,14 @@ const AirdropDapp = () => {
     const walletResponse = await connectWallet();
     setStatus(walletResponse.status);
     setWallet(walletResponse.address);
+    await switchNetwork();
   };
+
+  const disconnectWalletPressed = async () => {
+    await disconnectWallet();
+    setWallet("");
+    setStatus("Wallet disconnected");
+  }
     
   const onClaimPressed = async () => {
     if(isClaimActive) {
@@ -130,9 +116,33 @@ const AirdropDapp = () => {
     }
   };
 
+  const getButtonText = () => {
+    if (!walletAddress) return "Connect Wallet";
+    if (!isEligible) return "NOT ELIGIBLE";
+    if (!isClaimActive) return (
+      <span>
+      Claim Starts: <Timer claimPeriodStart={claimPeriodStart}/>
+      </span>
+    );
+    return step === 1 ? `Claim ${amountToClaim} $GIBISBIG` : "GIBISBIG";
+  };
+
+  const handleButtonClick = () => {
+    if (step === 1) {
+      setStep(2);
+    } else {
+      onClaimPressed();
+    }
+  };
+
+  const getButtonDisabledStatus = () => {
+    if (!walletAddress || !isEligible || (step === 2 && !isClaimActive)) return true;
+    return false;
+  };
+
 return (
   <div id ="container">
-    <img></img>
+    <img alt="" />
     <button id="walletButton" onClick={connectWalletPressed}>
       {walletAddress.length > 0 ? (
       "Connect: "+
@@ -143,28 +153,37 @@ return (
       <span>Connect Wallet</span>
       )}
     </button>
+    {walletAddress && (
+      <button id="disconnectButton" onClick={disconnectWalletPressed}>
+        Disconnect Wallet
+      </button>
+    )}
       
     <h1>It's</h1>
     <h1>GIB</h1>
     <h1>TIME</h1>
-    <h3>{claimPeriodEnd ? 'Claim Starts' : 'Claim Ends' }</h3>
+    <h3>{isClaimActive ? 'Claim Ends' : 'Claim Starts' }</h3>
     <Timer claimPeriodStart={claimPeriodStart} claimPeriodEnd={claimPeriodEnd}/>
     <p id="status">{status}</p>
     {walletAddress ? (
       <div>
-        <p>wallet Address: {walletAddress}</p>
         {isEligible ? (
-          <h2>🎉Congrats!!! Claim {amountToClaim} $GIBISBIG</h2>
+          <div>
+            <h2>🎉Congrats!!! Claim {amountToClaim} $GIBISBIG</h2>
+            <button 
+              id="publish"
+              onClick={handleButtonClick}
+              disabled={getButtonDisabledStatus()}
+            >
+            {getButtonText()}
+            </button>
+          </div>
         ) : (
           <h2>😢YOU DEFINITELY GET WHAT YOU GIB</h2>
         )}
-        <button id="publish" onClick={onClaimPressed} disabled={!isClaimActive || !isEligible}>
-          {isClaimActive ? "" : ""}
-          {isEligible? "GIB IS BIG" : ' NOT ELIGIBLE'}
-        </button>
       </div>
     ) :(
-      <button id="walletButton" onClick={connectWalletPressed}>Connect Wallet</button>
+      <button id="walletButton" onClick={connectWalletPressed}>Connect Wallet To Claim</button>
     )}
   </div>
   );
