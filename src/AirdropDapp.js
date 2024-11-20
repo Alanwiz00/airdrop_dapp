@@ -14,7 +14,6 @@ import {
 const AirdropDapp = () => {
   const [walletAddress, setWallet] = useState("");
   const [status, setStatus] = useState("");
-  const [message, setMessage] = useState("No connection to the network."); //default message
   const [isClaimActive, setIsClaimActive] = useState(false);
   const [amountToClaim, setAmountToClaim] = useState(0);
   const [isEligible, setIsEligible] = useState(false);
@@ -88,7 +87,7 @@ const AirdropDapp = () => {
         <p>
           {" "}
           🦊{" "}
-          <a target="_blank" href={`https://metamask.io/download`}>
+          <a target="_blank" rel="noreferrer" href={`https://metamask.io/download`}>
             You must install Metamask, a virtual Ethereum wallet, in your  browser.
           </a>
         </p>

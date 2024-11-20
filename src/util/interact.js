@@ -1,6 +1,5 @@
 import addressList from "./proof/addressList.json"
 import proofList from "./proof/proofs.json"
-const ethers = require('ethers');
 const alchemyKey = "wss://eth-sepolia.g.alchemy.com/v2/snMDVX1MDtnuGO85MQX65rPXlyF9XPlL"
 const { createAlchemyWeb3 } = require("@alch/alchemy-web3");
 const web3 = createAlchemyWeb3(alchemyKey); 
@@ -43,7 +42,7 @@ export const connectWallet = async () => {
               <p>
                 {" "}
                 🦊{" "}
-                <a target="_blank" href={`https://metamask.io/download`}>
+                <a target="_blank"  rel="noreferrer" href={`https://metamask.io/download`}>
                   You must install Metamask, a virtual Ethereum wallet, in your
                   browser.
                 </a>
@@ -137,7 +136,7 @@ export const getCurrentWalletConnected = async () => {
               <p>
                 {" "}
                 🦊{" "}
-                <a target="_blank" href={`https://metamask.io/download`}>
+                <a target="_blank"  rel="noreferrer" href={`https://metamask.io/download`}>
                   You must install Metamask, a virtual Ethereum wallet, in your
                   browser.
                 </a>
@@ -204,7 +203,7 @@ export const claimAirdrop = async () => {
       status: (
         <span>
         ✅{" "}
-        <a target="_blank" href={`https://sepolia.etherscan.io/tx/${txHash}`}>
+        <a target="_blank"  rel="noreferrer" href={`https://sepolia.etherscan.io/tx/${txHash}`}>
             View the status of your transaction on Etherscan!
         </a>
         <br />
